@@ -26,7 +26,7 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
 
   Counters.Counter private tokenId;
 
-  bool public pause = true;
+  bool public pause = false;
 
   string public baseExtension = ".json";
   string public baseTokenURI;
@@ -45,16 +45,16 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
   bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
 
   constructor(
-    // string memory _baseTokenURI,
-    // address _verifier
+    string memory _baseTokenURI,
+    address _verifier
     ) 
     ERC721("Smart Contract", "SC") 
     Ownable()
     ReentrancyGuard()
     {
-    //  baseTokenURI = _baseTokenURI; 
-    //  verifier = _verifier;
-    //  emit VerifierSet(address(0), _verifier);
+     baseTokenURI = _baseTokenURI; 
+     verifier = _verifier;
+     emit VerifierSet(address(0), _verifier);
   }
 
   function getTotalSupply() external view returns (uint256) {
