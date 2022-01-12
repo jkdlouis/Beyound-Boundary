@@ -10,14 +10,14 @@ const fetchDataRequest = () => {
 const fetchDataSuccess = (payload) => {
   return {
     type: "CHECK_DATA_SUCCESS",
-    payload: payload,
+    payload,
   };
 };
 
 const fetchDataFailed = (payload) => {
   return {
     type: "CHECK_DATA_FAILED",
-    payload: payload,
+    payload,
   };
 };
 
@@ -29,15 +29,10 @@ export const fetchData = (account) => {
         .getState()
         .blockchain.smartContract.methods.name()
         .call();
-      let allTokens = await store
-        .getState()
-        .blockchain.smartContract.methods.getAllTokens()
-        .call();
 
       dispatch(
         fetchDataSuccess({
           name,
-          allTokens,
         })
       );
     } catch (err) {

@@ -34,17 +34,25 @@ const updateAccountRequest = (payload) => {
 export const connect = () => {
   return async (dispatch) => {
     dispatch(connectRequest());
-    if (window.ethereum) {
+    const { ethereum } = window;
+    const isMetaMaskInstalled = ethereum && ethereum.isMetaMask;
+    if (isMetaMaskInstalled) {
       let web3 = new Web3(window.ethereum);
       try {
         const accounts = await window.ethereum.request({
-          method: "eth_accounts",
+          method: "eth_requestAccounts",
         });
         const networkId = await window.ethereum.request({
           method: "net_version",
         });
         const NetworkData = await SmartContract.networks[networkId];
+
         if (NetworkData) {
+          // If we deploy our contract with remix
+          // we need to include the contract ABI in contracts folder
+          // we will get this ABI from ether scan
+          // we will change the below ABI to point to that json file
+          // we will grab the contract address and replace it below
           const SmartContractObj = new web3.eth.Contract(
             SmartContract.abi,
             NetworkData.address
@@ -65,7 +73,7 @@ export const connect = () => {
           });
           // Add listeners end
         } else {
-          dispatch(connectFailed("Change network to Polygon."));
+          dispatch(connectFailed("Change network to Ethereum."));
         }
       } catch (err) {
         dispatch(connectFailed("Something went wrong."));
