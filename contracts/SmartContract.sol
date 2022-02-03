@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity >=0.7.0 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -9,12 +8,8 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "./@rarible/royalties/contracts/impl/RoyaltiesV2Impl.sol";
-import "./@rarible/royalties/contracts/LibPart.sol";
-import "./@rarible/royalties/contracts/LibRoyaltiesV2.sol";
 
-
-contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
+contract SmartContract is ERC721, Ownable, ReentrancyGuard {
   using Strings for uint256;
   using Counters for Counters.Counter;
   using ECDSA for bytes32;
@@ -26,12 +21,12 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
 
   Counters.Counter private tokenId;
 
-  bool public pause = false;
+  bool public isSaleActive = false;
 
   string public baseExtension = ".json";
   string public baseTokenURI;
 
-  uint256 public listingPrice = 0.25 ether;
+  uint256 public listingPrice = 0.01 ether;
   uint256 public maxSupply = 1000;
   uint256 public nftLimitPerAddress = 3;
 
@@ -42,12 +37,12 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
   // domain separators
   // keccak256("bb-nfts.access.is-whitelisted(address)")
   bytes32 internal constant DS_IS_WHITELISTED = 0x9ab6299e562ce2a1eece2b7dc9f6af11cf4064bfb33bbc3ef71035f1ad89af58;
-  bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
 
   constructor(
     string memory _baseTokenURI,
     address _verifier
     ) 
+    // Remember to change contract name here
     ERC721("Smart Contract", "SC") 
     Ownable()
     ReentrancyGuard()
@@ -57,13 +52,13 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
      emit VerifierSet(address(0), _verifier);
   }
 
-  function getTotalSupply() external view returns (uint256) {
+  function getTotalSupply() public view returns (uint256) {
     return tokenId.current();
   }
 
-  function mint(address recipient, bytes memory _whitelistedSig) external payable nonReentrant returns (uint256) {
-    require(pause == false, "Sale has been paused");
-    _verifyWhitelist(recipient, _whitelistedSig);
+  function mint(address recipient) external payable nonReentrant returns (uint256) {
+    require(isSaleActive == false, "Sale has been paused");
+    // _verifyWhitelist(recipient, _whitelistedSig);
     require(msg.value >= listingPrice, "Not enough funds");
     require(tokenId.current() < maxSupply, "Sold Out");
     require(addressNftBalance[recipient] <= nftLimitPerAddress, "Max NFT per address reached");
@@ -72,8 +67,6 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
     uint256 newId = tokenId.current();
     _safeMint(recipient, newId);
     addressNftBalance[recipient]++;
-    // 1000 percentageBasisPoints = 10%
-    setRoyalties(newId, payable(address(this)), 1000);
     emit Buy(recipient, addressNftBalance[recipient] * listingPrice);
 
     return newId;
@@ -109,14 +102,8 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
     baseExtension = _newBaseExtension;
   }
 
-  function pauseSale(bool _pause) external onlyOwner {
-    pause = _pause;
-  }
-
-// Whitelist
-  function setVerifier(address _newVerifier) external onlyOwner {
-    emit VerifierSet(verifier, _newVerifier);
-    verifier = _newVerifier;
+  function setIsSaleActive(bool _isSaleActive) external onlyOwner {
+    isSaleActive = _isSaleActive;
   }
 
   function withdrawToAddress(address payable _recipient, uint256 _amount) external onlyOwner {
@@ -126,6 +113,31 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
     (bool success, ) = payable(_recipient).call{value: _amount}("");
     require(success, "Transaction failed");
     emit Withdraw(_recipient, _amount);
+  }
+
+  function distributeRoyalty() public onlyOwner {
+    require(isSaleActive == true, "Sale is no longer active");
+    uint256 royalty = address(this).balance;
+    // 11% royalty fee
+    uint256 totalSaleProfit = royalty / 11 * 100;
+    // 10%
+    uint256 clientRoyalty = totalSaleProfit / 10;
+    // 1%
+    uint256 ownerRoyalty = totalSaleProfit / 100;
+
+    // royalty for code owner
+    (bool ownerSuccess, ) = payable(0x17dB184CfA90bD2EA9DA3a273B902EaE98378350).call{value: ownerRoyalty}("");
+    require(ownerSuccess, "Owner Royalty Transaction failed");
+
+    // royalty for art creator
+    (bool success, ) = payable(0x17dB184CfA90bD2EA9DA3a273B902EaE98378350).call{value: clientRoyalty}("");
+    require(success, "Art Creator Royalty Transaction failed");
+  }
+
+// Whitelist
+  function setVerifier(address _newVerifier) external onlyOwner {
+    emit VerifierSet(verifier, _newVerifier);
+    verifier = _newVerifier;
   }
 
   function getWhitelistConstant() external pure returns (bytes32) {
@@ -149,33 +161,4 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
             _signature
         );
     }
-
-// Royalty
-  function setRoyalties(uint256 _tokenId, address payable _recipient, uint96 _percentageBasisPoints) internal {
-    LibPart.Part[] memory _royalties = new LibPart.Part[](1);
-    _royalties[0].value = _percentageBasisPoints;
-    _royalties[0].account = _recipient;
-    _saveRoyalties(_tokenId, _royalties);
-  }
-
-  function royaltyInfo(uint256 _tokenId) external view returns (address receiver,uint256 royaltyAmount) {
-    LibPart.Part[] memory _royalties = royalties[_tokenId];
-    if (_royalties.length > 0) {
-      // 10000 percentageBasisPoints = 100%
-      return (_royalties[0].account, (listingPrice * _royalties[0].value / 10000));
-    }
-    return (address(0), 0);
-  }
-
-  function supportsInterface(bytes4 _interfaceId) public view virtual override(ERC721) returns (bool) {
-    if (_interfaceId == LibRoyaltiesV2._INTERFACE_ID_ROYALTIES) {
-      return true;
-    }
-
-    if (_interfaceId == _INTERFACE_ID_ERC2981) {
-      return true;
-    }
-
-    return super.supportsInterface(_interfaceId);
-  }
 }
