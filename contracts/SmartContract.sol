@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity >=0.7.0 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -22,12 +21,12 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard {
 
   Counters.Counter private tokenId;
 
-  bool public pause = false;
+  bool public isSaleActive = false;
 
   string public baseExtension = ".json";
   string public baseTokenURI;
 
-  uint256 public listingPrice = 0.25 ether;
+  uint256 public listingPrice = 0.01 ether;
   uint256 public maxSupply = 1000;
   uint256 public nftLimitPerAddress = 3;
 
@@ -43,6 +42,7 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard {
     string memory _baseTokenURI,
     address _verifier
     ) 
+    // Remember to change contract name here
     ERC721("Smart Contract", "SC") 
     Ownable()
     ReentrancyGuard()
@@ -52,13 +52,13 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard {
      emit VerifierSet(address(0), _verifier);
   }
 
-  function getTotalSupply() external view returns (uint256) {
+  function getTotalSupply() public view returns (uint256) {
     return tokenId.current();
   }
 
-  function mint(address recipient, bytes memory _whitelistedSig) external payable nonReentrant returns (uint256) {
-    require(pause == false, "Sale has been paused");
-    _verifyWhitelist(recipient, _whitelistedSig);
+  function mint(address recipient) external payable nonReentrant returns (uint256) {
+    require(isSaleActive == false, "Sale has been paused");
+    // _verifyWhitelist(recipient, _whitelistedSig);
     require(msg.value >= listingPrice, "Not enough funds");
     require(tokenId.current() < maxSupply, "Sold Out");
     require(addressNftBalance[recipient] <= nftLimitPerAddress, "Max NFT per address reached");
@@ -102,14 +102,8 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard {
     baseExtension = _newBaseExtension;
   }
 
-  function pauseSale(bool _pause) external onlyOwner {
-    pause = _pause;
-  }
-
-// Whitelist
-  function setVerifier(address _newVerifier) external onlyOwner {
-    emit VerifierSet(verifier, _newVerifier);
-    verifier = _newVerifier;
+  function setIsSaleActive(bool _isSaleActive) external onlyOwner {
+    isSaleActive = _isSaleActive;
   }
 
   function withdrawToAddress(address payable _recipient, uint256 _amount) external onlyOwner {
@@ -119,6 +113,31 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard {
     (bool success, ) = payable(_recipient).call{value: _amount}("");
     require(success, "Transaction failed");
     emit Withdraw(_recipient, _amount);
+  }
+
+  function distributeRoyalty() public onlyOwner {
+    require(isSaleActive == true, "Sale is no longer active");
+    uint256 royalty = address(this).balance;
+    // 11% royalty fee
+    uint256 totalSaleProfit = royalty / 11 * 100;
+    // 10%
+    uint256 clientRoyalty = totalSaleProfit / 10;
+    // 1%
+    uint256 ownerRoyalty = totalSaleProfit / 100;
+
+    // royalty for code owner
+    (bool ownerSuccess, ) = payable(0x17dB184CfA90bD2EA9DA3a273B902EaE98378350).call{value: ownerRoyalty}("");
+    require(ownerSuccess, "Owner Royalty Transaction failed");
+
+    // royalty for art creator
+    (bool success, ) = payable(0x17dB184CfA90bD2EA9DA3a273B902EaE98378350).call{value: clientRoyalty}("");
+    require(success, "Art Creator Royalty Transaction failed");
+  }
+
+// Whitelist
+  function setVerifier(address _newVerifier) external onlyOwner {
+    emit VerifierSet(verifier, _newVerifier);
+    verifier = _newVerifier;
   }
 
   function getWhitelistConstant() external pure returns (bytes32) {
