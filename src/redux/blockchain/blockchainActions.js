@@ -42,11 +42,13 @@ export const connect = () => {
         const accounts = await window.ethereum.request({
           method: "eth_requestAccounts",
         });
-        const networkId = await window.ethereum.request({
-          method: "net_version",
-        });
-        const NetworkData = await SmartContract.networks[networkId];
+        // const networkId = await window.ethereum.request({
+        //   method: "net_version",
+        // });
+        const NetworkData = await SmartContract.networks['1641785591947'];
 
+        // will eventually check hard code network id here
+        // if (networkId == 1641785591947)
         if (NetworkData) {
           // If we deploy our contract with remix
           // we need to include the contract ABI in contracts folder
@@ -54,7 +56,9 @@ export const connect = () => {
           // we will change the below ABI to point to that json file
           // we will grab the contract address and replace it below
           const SmartContractObj = new web3.eth.Contract(
+            // replace with just SmartContract
             SmartContract.abi,
+            // replace contract address here
             NetworkData.address
           );
           dispatch(
