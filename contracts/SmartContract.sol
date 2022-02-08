@@ -9,12 +9,8 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "./@rarible/royalties/contracts/impl/RoyaltiesV2Impl.sol";
-import "./@rarible/royalties/contracts/LibPart.sol";
-import "./@rarible/royalties/contracts/LibRoyaltiesV2.sol";
 
-
-contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
+contract SmartContract is ERC721, Ownable, ReentrancyGuard {
   using Strings for uint256;
   using Counters for Counters.Counter;
   using ECDSA for bytes32;
@@ -42,7 +38,6 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
   // domain separators
   // keccak256("bb-nfts.access.is-whitelisted(address)")
   bytes32 internal constant DS_IS_WHITELISTED = 0x9ab6299e562ce2a1eece2b7dc9f6af11cf4064bfb33bbc3ef71035f1ad89af58;
-  bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
 
   constructor(
     string memory _baseTokenURI,
@@ -72,8 +67,6 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
     uint256 newId = tokenId.current();
     _safeMint(recipient, newId);
     addressNftBalance[recipient]++;
-    // 1000 percentageBasisPoints = 10%
-    setRoyalties(newId, payable(address(this)), 1000);
     emit Buy(recipient, addressNftBalance[recipient] * listingPrice);
 
     return newId;
@@ -149,33 +142,4 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2Impl {
             _signature
         );
     }
-
-// Royalty
-  function setRoyalties(uint256 _tokenId, address payable _recipient, uint96 _percentageBasisPoints) internal {
-    LibPart.Part[] memory _royalties = new LibPart.Part[](1);
-    _royalties[0].value = _percentageBasisPoints;
-    _royalties[0].account = _recipient;
-    _saveRoyalties(_tokenId, _royalties);
-  }
-
-  function royaltyInfo(uint256 _tokenId) external view returns (address receiver,uint256 royaltyAmount) {
-    LibPart.Part[] memory _royalties = royalties[_tokenId];
-    if (_royalties.length > 0) {
-      // 10000 percentageBasisPoints = 100%
-      return (_royalties[0].account, (listingPrice * _royalties[0].value / 10000));
-    }
-    return (address(0), 0);
-  }
-
-  function supportsInterface(bytes4 _interfaceId) public view virtual override(ERC721) returns (bool) {
-    if (_interfaceId == LibRoyaltiesV2._INTERFACE_ID_ROYALTIES) {
-      return true;
-    }
-
-    if (_interfaceId == _INTERFACE_ID_ERC2981) {
-      return true;
-    }
-
-    return super.supportsInterface(_interfaceId);
-  }
 }
