@@ -22,10 +22,6 @@ contract BBRoyalty is ERC721, Ownable {
     function getBalance() public view returns(uint256) {
       return address(this).balance;
     }
-
-    function getAddress() external view returns(address) {
-      return address(this);
-    }
     
     function contractURI() public view returns (string memory) {
         return _contractURI;
