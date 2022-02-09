@@ -8,8 +8,9 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "./RandomNumberNFT.sol";
 
-contract SmartContract is ERC721, Ownable, ReentrancyGuard {
+contract SmartContract is ERC721, Ownable, ReentrancyGuard, RandomNumberNFT {
   using Strings for uint256;
   using Counters for Counters.Counter;
   using ECDSA for bytes32;
@@ -21,7 +22,7 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard {
 
   Counters.Counter private tokenId;
 
-  bool public isSaleActive = false;
+  bool public isSaleActive = true;
 
   string public baseExtension = ".json";
   string public baseTokenURI;
@@ -43,9 +44,7 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard {
     address _verifier
     ) 
     // Remember to change contract name here
-    ERC721("Smart Contract", "SC") 
-    Ownable()
-    ReentrancyGuard()
+    ERC721("Smart Contract", "SC")
     {
      baseTokenURI = _baseTokenURI; 
      verifier = _verifier;
@@ -56,8 +55,9 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard {
     return tokenId.current();
   }
 
+  // bytes memory _whitelistedSig
   function mint(address recipient) external payable nonReentrant returns (uint256) {
-    require(isSaleActive == false, "Sale has been paused");
+    require(isSaleActive == true, "Sale has been paused");
     // _verifyWhitelist(recipient, _whitelistedSig);
     require(msg.value >= listingPrice, "Not enough funds");
     require(tokenId.current() < maxSupply, "Sold Out");
@@ -113,25 +113,6 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard {
     (bool success, ) = payable(_recipient).call{value: _amount}("");
     require(success, "Transaction failed");
     emit Withdraw(_recipient, _amount);
-  }
-
-  function distributeRoyalty() public onlyOwner {
-    require(isSaleActive == true, "Sale is no longer active");
-    uint256 royalty = address(this).balance;
-    // 11% royalty fee
-    uint256 totalSaleProfit = royalty / 11 * 100;
-    // 10%
-    uint256 clientRoyalty = totalSaleProfit / 10;
-    // 1%
-    uint256 ownerRoyalty = totalSaleProfit / 100;
-
-    // royalty for code owner
-    (bool ownerSuccess, ) = payable(0x17dB184CfA90bD2EA9DA3a273B902EaE98378350).call{value: ownerRoyalty}("");
-    require(ownerSuccess, "Owner Royalty Transaction failed");
-
-    // royalty for art creator
-    (bool success, ) = payable(0x17dB184CfA90bD2EA9DA3a273B902EaE98378350).call{value: clientRoyalty}("");
-    require(success, "Art Creator Royalty Transaction failed");
   }
 
 // Whitelist
