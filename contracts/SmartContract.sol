@@ -16,6 +16,7 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RandomNumberNFT {
   using ECDSA for bytes32;
   using SignatureChecker for address;
 
+  event Received(address indexed sender, uint256 amount);
   event Buy(address indexed buyer, uint256 amount);
   event VerifierSet(address indexed preVerifier, address indexed newVerifier);
   event Withdraw(address indexed recipient, uint256 amount);
@@ -98,6 +99,10 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RandomNumberNFT {
         : "";
   }
 
+  receive() external payable {
+      emit Received(msg.sender, msg.value);
+  }
+
   function setBaseExtension(string memory _newBaseExtension) external onlyOwner {
     baseExtension = _newBaseExtension;
   }
@@ -106,9 +111,13 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RandomNumberNFT {
     isSaleActive = _isSaleActive;
   }
 
+  function getBalance() public view onlyOwner returns(uint256) {
+    return address(this).balance;
+  }
+
   function withdrawToAddress(address payable _recipient, uint256 _amount) external onlyOwner {
     if (_amount == type(uint256).max) {
-      _amount = address(this).balance;
+      _amount = getBalance();
     }
     (bool success, ) = payable(_recipient).call{value: _amount}("");
     require(success, "Transaction failed");

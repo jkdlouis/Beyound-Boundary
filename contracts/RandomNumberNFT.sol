@@ -10,8 +10,7 @@ contract RandomNumberNFT is VRFConsumerBase, Ownable {
     uint256 internal fee;
     uint256 public randomResult;
 
-    event Received(address indexed sender, uint256 amount);
-    event Withdraw(address indexed recipient, uint256 amount);
+    event WithdrawLINK(address indexed recipient, uint256 amount);
     
     /**
      * Constructor inherits VRFConsumerBase
@@ -61,6 +60,6 @@ contract RandomNumberNFT is VRFConsumerBase, Ownable {
       uint256 amount = getBalanceInLink();
       (bool success, ) = payable(_recipient).call{value: amount}("");
       require(success, "Transaction failed");
-      emit Withdraw(_recipient, amount);
+      emit WithdrawLINK(_recipient, amount);
     }
 }
