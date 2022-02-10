@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.7.0 <0.9.0;
 
-
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -24,7 +23,7 @@ contract BBRoyalty is ERC721, Ownable {
     }
     
     function contractURI() public view returns (string memory) {
-        return _contractURI;
+      return _contractURI;
     }
 
     function setContractURI(string memory _newContractURI) external onlyOwner {
@@ -32,11 +31,11 @@ contract BBRoyalty is ERC721, Ownable {
     }
 
     function withdrawToAddress(address payable _recipient, uint256 _amount) external onlyOwner {
-    if (_amount == type(uint256).max) {
-      _amount = address(this).balance;
+      if (_amount == type(uint256).max) {
+        _amount = address(this).balance;
+      }
+      (bool success, ) = payable(_recipient).call{value: _amount}("");
+      require(success, "Transaction failed");
+      emit Withdraw(_recipient, _amount);
     }
-    (bool success, ) = payable(_recipient).call{value: _amount}("");
-    require(success, "Transaction failed");
-    emit Withdraw(_recipient, _amount);
-  }
 }

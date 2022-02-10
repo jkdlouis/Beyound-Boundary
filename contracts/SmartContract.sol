@@ -99,10 +99,6 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RandomNumberNFT {
         : "";
   }
 
-  receive() external payable {
-      emit Received(msg.sender, msg.value);
-  }
-
   function setBaseExtension(string memory _newBaseExtension) external onlyOwner {
     baseExtension = _newBaseExtension;
   }
