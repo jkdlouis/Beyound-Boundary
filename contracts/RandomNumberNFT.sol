@@ -10,10 +10,15 @@ contract RandomNumberNFT is VRFConsumerBase, Ownable {
     uint256 internal fee;
     uint256 public randomResult;
 
-    event WithdrawLINK(address indexed recipient, uint256 amount);
+    event WithdrawLink(address indexed recipient, uint256 amount);
     
     /**
      * Constructor inherits VRFConsumerBase
+     * 
+     * Network: Kovan
+     * Chainlink VRF Coordinator address: 0xdD3782915140c8f3b190B5D67eAc6dc5760C46E9
+     * LINK token address:                0xa36085F69e2889c224210F603D836748e7dC0088
+     * Key Hash: 0x6c3699283bda56ad74f6b855546325b68d482e983852a7a82979cc4807b641f4
      * 
      * Network: Rinkeby
      * LINK token address: 0x01BE23585060835E02B77ef475b0Cc51aA1e0709
@@ -29,8 +34,8 @@ contract RandomNumberNFT is VRFConsumerBase, Ownable {
      */
     constructor() 
         VRFConsumerBase(
-            0xb3dCcb4Cf7a26f6cf6B120Cf5A73875B7BBc655B, // VRF Coordinator
-            0x01BE23585060835E02B77ef475b0Cc51aA1e0709  // LINK Token
+            0xdD3782915140c8f3b190B5D67eAc6dc5760C46E9, // VRF Coordinator
+            0xa36085F69e2889c224210F603D836748e7dC0088  // LINK Token
         )
     {
         keyHash = 0x6c3699283bda56ad74f6b855546325b68d482e983852a7a82979cc4807b641f4;
@@ -56,10 +61,10 @@ contract RandomNumberNFT is VRFConsumerBase, Ownable {
        return LINK.balanceOf(address(this));
     }
 
-    function withdrawLINK(address payable _recipient) external onlyOwner {
+    function withdrawLink(address payable _recipient) external onlyOwner {
       uint256 amount = getBalanceInLink();
       (bool success, ) = payable(_recipient).call{value: amount}("");
       require(success, "Transaction failed");
-      emit WithdrawLINK(_recipient, amount);
+      emit WithdrawLink(_recipient, amount);
     }
 }
