@@ -5,8 +5,6 @@ import { fetchData } from "./redux/data/dataActions";
 import * as s from "./styles/globalStyles";
 import styled from "styled-components";
 
-const NFTCost = "0.25";
-
 export const StyledButton = styled.button`
   padding: 8px;
 `;
@@ -23,14 +21,18 @@ function App() {
   const mint = () => {
     setStatus("Uploading to IPFS");
     // Need to call /api/verify-whitelist to get the whitelist signature
+    // post body: { body: { address: blockchain.account } }
+    // Set loader
     // error handling needed
     // once the response status is 200, include the signature data in mint()
+    // const listingPrice = "0.01";
+    const listingPrice = blockchain.smartContract.methods.listingPrice().call();
     blockchain.smartContract.methods
       .mint(blockchain.account)
       .send({
         from: blockchain.account,
         gasLimit: "285000",
-        value: blockchain.web3.utils.toWei(NFTCost, "ether"),
+        value: blockchain.web3.utils.toWei(listingPrice, "ether"),
       })
       .once("error", (err) => {
         console.log(err);
