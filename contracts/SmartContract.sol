@@ -61,11 +61,11 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RandomNumberNFT {
     require(isSaleActive == true, "Sale has been paused");
     // _verifyWhitelist(recipient, _whitelistedSig);
     require(msg.value >= listingPrice, "Not enough funds");
-    require(tokenId.current() < maxSupply, "Sold Out");
+    require(getTotalSupply() < maxSupply, "Sold Out");
     require(addressNftBalance[recipient] <= nftLimitPerAddress, "Max NFT per address reached");
 
     tokenId.increment();
-    uint256 newId = tokenId.current();
+    uint256 newId = getTotalSupply();
     _safeMint(recipient, newId);
     addressNftBalance[recipient]++;
     emit Buy(recipient, addressNftBalance[recipient] * listingPrice);
@@ -107,7 +107,7 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, RandomNumberNFT {
     isSaleActive = _isSaleActive;
   }
 
-  function getBalance() public view onlyOwner returns(uint256) {
+  function getBalance() public view returns(uint256) {
     return address(this).balance;
   }
 
