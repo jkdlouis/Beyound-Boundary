@@ -57,14 +57,13 @@ contract RandomNumberNFT is VRFConsumerBase, Ownable {
         randomResult = randomness;
     }
 
-    function getBalanceInLink() public view onlyOwner returns (uint256) {
+    function getBalanceInLink() public view returns (uint256) {
        return LINK.balanceOf(address(this));
     }
 
     function withdrawLink(address payable _recipient) external onlyOwner {
       uint256 amount = getBalanceInLink();
-      (bool success, ) = payable(_recipient).call{value: amount}("");
-      require(success, "Transaction failed");
+      require(LINK.transfer(_recipient, amount), "Unable to withdraw LINK");
       emit WithdrawLink(_recipient, amount);
     }
 }
