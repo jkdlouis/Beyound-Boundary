@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Container, Row, Col, Button, Accordion } from "react-bootstrap";
 import { connect } from "./redux/blockchain/blockchainActions";
 import { fetchData } from "./redux/data/dataActions";
-import * as s from "./styles/globalStyles";
-import styled from "styled-components";
-
-export const StyledButton = styled.button`
-  padding: 8px;
-`;
+import "bootstrap/dist/css/bootstrap.min.css";
 
 function App() {
   const blockchain = useSelector((state) => state.blockchain);
@@ -15,8 +11,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const dispatch = useDispatch();
-
-  console.log(24, data);
 
   const mint = () => {
     setStatus("Uploading to IPFS");
@@ -48,66 +42,88 @@ function App() {
   };
 
   useEffect(() => {
-    if (blockchain.account !== "" && blockchain.smartContract !== null) {
+    if (blockchain.account) {
       dispatch(fetchData(blockchain.account));
     }
   }, [blockchain, dispatch]);
 
   return (
-    <s.Screen>
-      {blockchain.account === "" || blockchain.smartContract === null ? (
-        <s.Container flex={1} ai={"center"} jc={"center"}>
-          <s.TextTitle>Connect to Metamask</s.TextTitle>
-          <s.SpacerSmall />
-          <StyledButton
-            onClick={(e) => {
-              e.preventDefault();
-              dispatch(connect());
-            }}
-          >
-            CONNECT
-          </StyledButton>
-          <s.SpacerSmall />
-          {blockchain.errorMsg !== "" ? (
-            <s.TextDescription>{blockchain.errorMsg}</s.TextDescription>
-          ) : null}
-        </s.Container>
-      ) : (
-        <s.Container flex={1} ai={"center"} style={{ padding: 24 }}>
-          <s.TextTitle style={{ textAlign: "center" }}>
-            Welcome to Beyond Boundary Collection
-          </s.TextTitle>
-          {loading ? (
-            <>
-              <s.SpacerSmall />
-              <s.TextDescription style={{ textAlign: "center" }}>
-                loading...
-              </s.TextDescription>
-            </>
-          ) : null}
-          {status !== "" ? (
-            <>
-              <s.SpacerSmall />
-              <s.TextDescription style={{ textAlign: "center" }}>
-                {status}
-              </s.TextDescription>
-            </>
-          ) : null}
-          <s.SpacerLarge />
-          <s.Container fd={"row"} jc={"center"}>
-            <StyledButton
+    <Container>
+      <Row className="justify-content-between">
+        <Col md={3}>
+          <img src="https://via.placeholder.com/150" alt="logo"></img>
+        </Col>
+        <Col md={3}>
+          <p>Wallet address: {blockchain.account}</p>
+        </Col>
+      </Row>
+      {!blockchain.account && (
+        <Row className="text-center">
+          <Col>
+            <h1>Connect to Metamask</h1>
+            <Button
+              onClick={(e) => {
+                e.preventDefault();
+                dispatch(connect());
+              }}
+            >
+              Connect
+            </Button>
+            {blockchain.errorMsg && <p>{blockchain.errorMsg}</p>}
+          </Col>
+        </Row>
+      )}
+      {blockchain.account && (
+        <Row className="text-center pt-5 pb-5">
+          <Col>
+            <h1>Welcome to Beyond Boundary Collection</h1>
+            {loading && <p>loading...</p>}
+            {status && <p>{status}</p>}
+            <Button
               onClick={(e) => {
                 e.preventDefault();
                 mint();
               }}
             >
-              MINT
-            </StyledButton>
-          </s.Container>
-          <s.SpacerLarge />
-        </s.Container>
+              Mint
+            </Button>
+          </Col>
+        </Row>
       )}
-    </s.Screen>
+      <Row className="pt-5 pb-5">
+        <Col>
+          <h2 className="text-center">Frequently Asked Questions</h2>
+          <Accordion defaultActiveKey="0">
+            <Accordion.Item eventKey="0">
+              <Accordion.Header>Accordion Item #1</Accordion.Header>
+              <Accordion.Body>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+                eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+                enim ad minim veniam, quis nostrud exercitation ullamco laboris
+                nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor
+                in reprehenderit in voluptate velit esse cillum dolore eu fugiat
+                nulla pariatur. Excepteur sint occaecat cupidatat non proident,
+                sunt in culpa qui officia deserunt mollit anim id est laborum.
+              </Accordion.Body>
+            </Accordion.Item>
+            <Accordion.Item eventKey="1">
+              <Accordion.Header>Accordion Item #2</Accordion.Header>
+              <Accordion.Body>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+                eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+                enim ad minim veniam, quis nostrud exercitation ullamco laboris
+                nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor
+                in reprehenderit in voluptate velit esse cillum dolore eu fugiat
+                nulla pariatur. Excepteur sint occaecat cupidatat non proident,
+                sunt in culpa qui officia deserunt mollit anim id est laborum.
+              </Accordion.Body>
+            </Accordion.Item>
+          </Accordion>
+        </Col>
+      </Row>
+      <Row>{/* parallax section */}</Row>
+      <Row>{/* footer section */}</Row>
+    </Container>
   );
 }
 
