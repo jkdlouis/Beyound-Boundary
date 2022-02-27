@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0 <0.9.0;
+pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
@@ -10,7 +9,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./VRFv2Consumer.sol";
 
-contract SmartContract is ERC721, Ownable, ReentrancyGuard, VRFv2Consumer {
+contract SmartContract is ERC721, ReentrancyGuard, VRFv2Consumer {
     using Strings for uint256;
     using Counters for Counters.Counter;
     using ECDSA for bytes32;
@@ -41,13 +40,21 @@ contract SmartContract is ERC721, Ownable, ReentrancyGuard, VRFv2Consumer {
     bytes32 internal constant DS_IS_WHITELISTED =
         0x9ab6299e562ce2a1eece2b7dc9f6af11cf4064bfb33bbc3ef71035f1ad89af58;
 
-    constructor(string memory _baseTokenURI, address _verifier)
+    constructor(
+        string memory _baseTokenURI,
+        address _verifier,
+        uint64 subscriptionId
+    )
         // Remember to change contract name here
         ERC721("Smart Contract", "SC")
     {
         baseTokenURI = _baseTokenURI;
         verifier = _verifier;
         emit VerifierSet(address(0), _verifier);
+
+        COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
+        LINKTOKEN = LinkTokenInterface(link);
+        s_subscriptionId = subscriptionId;
     }
 
     function getTotalSupply() public view returns (uint256) {
