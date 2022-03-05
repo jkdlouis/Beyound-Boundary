@@ -20,8 +20,6 @@ contract SmartContract is ERC721, ReentrancyGuard, VRFv2Consumer {
     event VerifierSet(address indexed preVerifier, address indexed newVerifier);
     event Withdraw(address indexed recipient, uint256 amount);
 
-    Counters.Counter private tokenId;
-
     bool public isSaleActive = true;
 
     string public baseExtension = ".json";
@@ -33,7 +31,11 @@ contract SmartContract is ERC721, ReentrancyGuard, VRFv2Consumer {
 
     address public verifier;
 
-    mapping(address => uint256) public addressNftBalance;
+    Counters.Counter private tokenId;
+
+    mapping(address => uint256) private addressNftBalance;
+    mapping(uint256 => address) private tokenOwnedByAddress;
+    mapping(uint256 => string) private _tokenURIs;
 
     // domain separators
     // keccak256("bb-nfts.access.is-whitelisted(address)")
@@ -62,26 +64,22 @@ contract SmartContract is ERC721, ReentrancyGuard, VRFv2Consumer {
     }
 
     // bytes memory _whitelistedSig
-    function mint(address recipient)
-        external
-        payable
-        nonReentrant
-        returns (uint256)
-    {
+    function mint() external payable nonReentrant returns (uint256) {
         require(isSaleActive == true, "Sale has been paused");
-        // _verifyWhitelist(recipient, _whitelistedSig);
+        // _verifyWhitelist(msg.sender, _whitelistedSig);
         require(msg.value >= listingPrice, "Not enough funds");
         require(getTotalSupply() < maxSupply, "Sold Out");
         require(
-            addressNftBalance[recipient] <= nftLimitPerAddress,
+            addressNftBalance[msg.sender] <= nftLimitPerAddress,
             "Max NFT per address reached"
         );
 
         tokenId.increment();
         uint256 newId = getTotalSupply();
-        _safeMint(recipient, newId);
-        addressNftBalance[recipient]++;
-        emit Buy(recipient, addressNftBalance[recipient] * listingPrice);
+        _safeMint(msg.sender, newId);
+        tokenOwnedByAddress[newId] = msg.sender;
+        addressNftBalance[msg.sender]++;
+        emit Buy(msg.sender, addressNftBalance[msg.sender] * listingPrice);
 
         return newId;
     }
@@ -99,21 +97,38 @@ contract SmartContract is ERC721, ReentrancyGuard, VRFv2Consumer {
         view
         virtual
         override
+        isTokenIdExist(_tokenId)
         returns (string memory)
     {
-        require(_exists(_tokenId), "NFT: URI query for nonexistent token");
+        string memory _tokenURI = _tokenURIs[_tokenId];
 
-        string memory currentBaseURI = _baseURI();
+        if (bytes(_tokenURI).length > 0) {
+            return convertTokenURI(_tokenURI, _tokenId);
+        }
+
+        return convertTokenURI(_baseURI(), _tokenId);
+    }
+
+    function convertTokenURI(string memory _tokenURI, uint256 _tokenId)
+        internal
+        view
+        returns (string memory)
+    {
         return
-            bytes(currentBaseURI).length > 0
-                ? string(
-                    abi.encodePacked(
-                        currentBaseURI,
-                        _tokenId.toString(),
-                        baseExtension
-                    )
-                )
-                : "";
+            string(
+                abi.encodePacked(_tokenURI, _tokenId.toString(), baseExtension)
+            );
+    }
+
+    function setTokenURI(uint256 _tokenId, string memory _tokenURI)
+        external
+        isTokenIdExist(_tokenId)
+    {
+        require(
+            tokenOwnedByAddress[_tokenId] == msg.sender,
+            "User does not own NFT"
+        );
+        _tokenURIs[_tokenId] = _tokenURI;
     }
 
     function setBaseExtension(string memory _newBaseExtension)
@@ -174,5 +189,10 @@ contract SmartContract is ERC721, ReentrancyGuard, VRFv2Consumer {
                     .toEthSignedMessageHash(),
                 _signature
             );
+    }
+
+    modifier isTokenIdExist(uint256 _tokenId) {
+        require(_exists(_tokenId), "ERC721: URI query for nonexistent token");
+        _;
     }
 }
