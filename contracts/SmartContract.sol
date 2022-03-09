@@ -19,6 +19,7 @@ contract SmartContract is ERC721, ReentrancyGuard, VRFv2Consumer {
     event Buy(address indexed buyer, uint256 amount);
     event VerifierSet(address indexed preVerifier, address indexed newVerifier);
     event Withdraw(address indexed recipient, uint256 amount);
+    event SetTokenURI(address indexed sender, uint256 tokenId, string tokenURI);
 
     bool public isSaleActive = true;
 
@@ -33,8 +34,8 @@ contract SmartContract is ERC721, ReentrancyGuard, VRFv2Consumer {
 
     Counters.Counter private tokenId;
 
-    mapping(address => uint256) private addressNftBalance;
-    mapping(uint256 => address) private tokenOwnedByAddress;
+    mapping(uint256 => address) public tokenOwnedByAddress;
+    mapping(address => uint256) public addressNftBalance;
     mapping(uint256 => string) private _tokenURIs;
 
     // domain separators
@@ -129,6 +130,7 @@ contract SmartContract is ERC721, ReentrancyGuard, VRFv2Consumer {
             "User does not own NFT"
         );
         _tokenURIs[_tokenId] = _tokenURI;
+        emit SetTokenURI(msg.sender, _tokenId, _tokenURI);
     }
 
     function setBaseExtension(string memory _newBaseExtension)
