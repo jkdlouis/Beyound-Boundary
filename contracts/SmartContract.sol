@@ -160,6 +160,10 @@ contract SmartContract is ERC721, ReentrancyGuard, VRFv2Consumer {
         emit Withdraw(_recipient, _amount);
     }
 
+    function renounceOwnership() public view override onlyOwner {
+        revert("Renounce ownership is not allowed");
+    }
+
     // Whitelist
     function setVerifier(address _newVerifier) external onlyOwner {
         emit VerifierSet(verifier, _newVerifier);
