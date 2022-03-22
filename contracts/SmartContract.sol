@@ -71,7 +71,7 @@ contract SmartContract is ERC721, ReentrancyGuard, VRFv2Consumer {
         require(msg.value >= listingPrice, "Not enough funds");
         require(getTotalSupply() < maxSupply, "Sold Out");
         require(
-            addressNftBalance[msg.sender] <= nftLimitPerAddress,
+            addressNftBalance[msg.sender] < nftLimitPerAddress,
             "Max NFT per address reached"
         );
 
@@ -91,6 +91,11 @@ contract SmartContract is ERC721, ReentrancyGuard, VRFv2Consumer {
 
     function _baseURI() internal view virtual override returns (string memory) {
         return baseTokenURI;
+    }
+
+    modifier isTokenIdExist(uint256 _tokenId) {
+        require(_exists(_tokenId), "ERC721: URI query for nonexistent token");
+        _;
     }
 
     function tokenURI(uint256 _tokenId)
@@ -195,10 +200,5 @@ contract SmartContract is ERC721, ReentrancyGuard, VRFv2Consumer {
                     .toEthSignedMessageHash(),
                 _signature
             );
-    }
-
-    modifier isTokenIdExist(uint256 _tokenId) {
-        require(_exists(_tokenId), "ERC721: URI query for nonexistent token");
-        _;
     }
 }
