@@ -37,19 +37,18 @@ export const connect = () => {
     const { ethereum } = window;
     const isMetaMaskInstalled = ethereum && ethereum.isMetaMask;
     if (isMetaMaskInstalled) {
-      let web3 = new Web3(window.ethereum);
+      let web3 = new Web3(ethereum);
       try {
-        const accounts = await window.ethereum.request({
+        const accounts = await ethereum.request({
           method: "eth_requestAccounts",
         });
-        // const networkId = await window.ethereum.request({
-        //   method: "net_version",
-        // });
-        const NetworkData = await SmartContract.networks['1641785591947'];
-
-        // will eventually check hard code network id here
-        // if (networkId == 1641785591947)
-        if (NetworkData) {
+        const networkId = await ethereum.request({
+          method: "net_version",
+        });
+        // const NetworkData = await SmartContract.networks['1641785591947'];
+        // eth mainnet: 1
+        // rinkeby: 4
+        if (networkId === "4") {
           // If we deploy our contract with remix
           // we need to include the contract ABI in contracts folder
           // we will get this ABI from ether scan
@@ -57,9 +56,9 @@ export const connect = () => {
           // we will grab the contract address and replace it below
           const SmartContractObj = new web3.eth.Contract(
             // replace with just SmartContract
-            SmartContract.abi,
+            SmartContract,
             // replace contract address here
-            NetworkData.address
+            ""
           );
           dispatch(
             connectSuccess({
@@ -69,10 +68,10 @@ export const connect = () => {
             })
           );
           // Add listeners start
-          window.ethereum.on("accountsChanged", (accounts) => {
+          ethereum.on("accountsChanged", (accounts) => {
             dispatch(updateAccount(accounts[0]));
           });
-          window.ethereum.on("chainChanged", () => {
+          ethereum.on("chainChanged", () => {
             window.location.reload();
           });
           // Add listeners end

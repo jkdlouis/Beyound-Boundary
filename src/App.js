@@ -12,32 +12,35 @@ function App() {
   const [status, setStatus] = useState("");
   const dispatch = useDispatch();
 
-  const mint = () => {
-    setStatus("Uploading to IPFS");
+  const mint = async () => {
+    setStatus("Minting in progress");
+    setLoading(true);
     // Need to call /api/verify-whitelist to get the whitelist signature
     // post body: { body: { address: blockchain.account } }
     // Set loader
     // error handling needed
     // once the response status is 200, include the signature data in mint()
     // const listingPrice = "0.01";
-    const listingPrice = blockchain.smartContract.methods.listingPrice().call();
+    const listingPrice = await blockchain.smartContract.methods
+      .listingPrice()
+      .call();
     blockchain.smartContract.methods
       .mint(blockchain.account)
       .send({
         from: blockchain.account,
         gasLimit: "285000",
-        value: blockchain.web3.utils.toWei(listingPrice, "ether"),
+        value: listingPrice,
       })
       .once("error", (err) => {
         console.log(err);
         setLoading(false);
-        setStatus("Error");
+        setStatus("Error: please refresh and try again.");
       })
       .then((receipt) => {
         console.log(receipt);
         setLoading(false);
         dispatch(fetchData(blockchain.account));
-        setStatus("Successfully minting your NFT");
+        setStatus("Successfully minted your NFT");
       });
   };
 
